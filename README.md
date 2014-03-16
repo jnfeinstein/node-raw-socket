@@ -1,3 +1,6 @@
+# Notice
+
+This is a fork of node-raw-socket by Stephen Vickers that is hosted in bitbucket.  I have added support for the AF_PACKET family of protocols, allowing you to have direct access to ethernet devices.  I also removed anything related to Windows because I never intend to run this on Windows.
 
 # raw-socket - [homepage][homepage]
 
