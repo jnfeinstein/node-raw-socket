@@ -786,12 +786,14 @@ Handle<Value> SocketWrap::BindToDevice (const Arguments& args) {
 	}
 
 	String::AsciiValue device(args[0]);
+	char* device_ascii = new char[IFNAMSIZ];
+	strcpy(device_ascii, *device);
 
   struct sockaddr_ll sll;
   struct ifreq ifr;
   bzero(&sll , sizeof(sll));
   bzero(&ifr , sizeof(ifr)); 
-  strncpy((char *)ifr.ifr_name, *device, IFNAMSIZ); 
+  strncpy((char *)ifr.ifr_name, device_ascii, IFNAMSIZ); 
   //copy device name to ifr 
   if((ioctl(socket->poll_fd_, SIOCGIFINDEX , &ifr)) == -1) {
 		ThrowException (Exception::Error (String::New (
