@@ -242,7 +242,6 @@ void ExportConstants (Handle<Object> target) {
 	socket_option->Set (String::NewSymbol ("SO_RCVTIMEO"), Number::New (SO_RCVTIMEO));
 	socket_option->Set (String::NewSymbol ("SO_SNDBUF"), Number::New (SO_SNDBUF));
 	socket_option->Set (String::NewSymbol ("SO_SNDTIMEO"), Number::New (SO_SNDTIMEO));
-	socket_option->Set (String::NewSymbol ("SO_BINDTODEVICE"), Number::New (SO_BINDTODEVICE));
 	socket_option->Set (String::NewSymbol ("SO_DONTROUTE"), Number::New (SO_DONTROUTE));
 
 	socket_option->Set (String::NewSymbol ("IP_HDRINCL"), Number::New (IP_HDRINCL));
@@ -788,21 +787,25 @@ Handle<Value> SocketWrap::BindToDevice (const Arguments& args) {
 
 	String::AsciiValue device(args[0]);
 
-	int rc = setsockopt(socket->poll_fd_,
-						SOL_SOCKET, SO_BINDTODEVICE,
-						*device, device.length());
-
-	if (rc == SOCKET_ERROR) {
+  struct sockaddr_ll sll;
+  struct ifreq ifr;
+  bzero(&sll , sizeof(sll));
+  bzero(&ifr , sizeof(ifr)); 
+  strncpy((char *)ifr.ifr_name, *device, IFNAMSIZ); 
+  //copy device name to ifr 
+  if((ioctl(socket->poll_fd_, SIOCGIFINDEX , &ifr)) == -1) {
 		ThrowException (Exception::Error (String::New (
 				raw_strerror (SOCKET_ERRNO))));
 		return scope.Close (args.This ());
-	}
-
-	struct ifreq ifr;
-	memset(&ifr, 0, sizeof(ifr));
- 	strncpy (ifr.ifr_name, *device, sizeof(ifr.ifr_name) - 1);
-  ifr.ifr_name[sizeof(ifr.ifr_name)-1] = '\0';
-  ioctl(socket->poll_fd_, SIOCGIFINDEX, &ifr);
+  }
+  sll.sll_family = socket->family_; 
+  sll.sll_ifindex = ifr.ifr_ifindex; 
+  sll.sll_protocol = socket->protocol_; 
+  if((bind(socket->poll_fd_, (struct sockaddr *)&sll , sizeof(sll))) ==-1) {
+		ThrowException (Exception::Error (String::New (
+				raw_strerror (SOCKET_ERRNO))));
+		return scope.Close (args.This ());
+  }
   socket->ifindex_ = ifr.ifr_ifindex;
 
 	return scope.Close (args.This ());	
