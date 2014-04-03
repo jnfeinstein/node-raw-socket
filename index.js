@@ -108,8 +108,8 @@ Socket.prototype.onSendReady = function () {
 			req.afterCallback.call (me, error, 0);
 		}
 	} else {
-		//if (! this.sendPaused)
-			//this.pauseSend ();
+		if (! this.sendPaused)
+			this.pauseSend ();
 	}
 }
 
